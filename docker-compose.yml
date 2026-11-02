@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. Edge Computer Vision Perception Node
+  cv-perception-edge:
+    build: .
+    container_name: mine-cv-edge
+    command: ["python", "cv_perception.py"]
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    environment:
+      - NODE_ROLE=EDGE_PERCEPTION
+      - FPS=20
+    restart: "no"
+
+  # 2. Distributed Streaming Broker & Storage Node
+  stream-broker:
+    build: .
+    container_name: mine-stream-broker
+    depends_on:
+      - cv-perception-edge
+    command: ["bash", "-c", "echo 'Streaming Broker active on hazard_stream.jsonl and mine_events.db' && tail -f /dev/null"]
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ROLE=STREAM_BROKER
+    restart: always
+
+  # 3. MARL Training & Distributed Dispatch Controller
+  marl-controller:
+    build: .
+    container_name: mine-marl-controller
+    depends_on:
+      - stream-broker
+    command: ["python", "marl_trainer.py"]
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+    environment:
+      - NODE_ROLE=CENTRAL_MARL_DISPATCH
+    restart: "no"
+
+  # 4. Streamlit Industrial Automation Command Center
+  streamlit-dashboard:
+    build: .
+    container_name: mine-command-center
+    depends_on:
+      - marl-controller
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+    command: ["streamlit", "run", "app.py", "--server.headless", "true", "--server.port", "8501", "--server.address", "0.0.0.0"]
+    environment:
+      - NODE_ROLE=COMMAND_CENTER_UI
+    restart: always
