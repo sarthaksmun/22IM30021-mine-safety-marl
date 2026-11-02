@@ -1,7 +1,7 @@
 # Distributed Safety and Risk Analytics for Underground Mines
 **Course Project: IM60210 - Distributed Analytics for Industrial Automation**  
 **Department of Industrial and Systems Engineering, IIT Kharagpur**
-
+**Mun Sarthak Satish - 22IM30021**
 ---
 
 ## Overview
